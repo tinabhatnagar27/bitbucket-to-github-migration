@@ -12,6 +12,11 @@ from urllib.parse import quote
 
 import requests
 
+try:
+    import boto3
+except ImportError:
+    boto3 = None
+
 
 # CONFIGURATION
 
@@ -50,6 +55,18 @@ EXISTING_REPO_MODE = os.getenv(
     "EXISTING_REPO_MODE",
     "skip"
 ).lower()
+
+# AWS Secrets Manager configuration
+SECRET_NAME = os.getenv(
+    "MIGRATION_SECRET_NAME",
+    "vcs-migration/tokens"
+)
+
+SECRET_REGION = (
+    os.getenv("AWS_REGION")
+    or os.getenv("AWS_DEFAULT_REGION")
+    or "us-east-1"
+)
 
 
 
@@ -1836,6 +1853,122 @@ def migrate_repository(
 
 
 
+# AWS SECRETS MANAGER
+
+
+def get_migration_tokens():
+
+    """
+    Load Bitbucket and GitHub tokens from AWS Secrets Manager.
+
+    Expected secret name:
+        vcs-migration/tokens
+
+    Expected JSON keys:
+        BITBUCKET_TOKEN
+        GITHUB_TOKEN
+
+    Environment variables are used only as a fallback.
+    Token values are never printed.
+    """
+
+    secret_error = None
+
+    if boto3 is not None:
+
+        try:
+
+            client = boto3.client(
+                "secretsmanager",
+                region_name=SECRET_REGION
+            )
+
+            response = client.get_secret_value(
+                SecretId=SECRET_NAME
+            )
+
+            secret_string = response.get(
+                "SecretString"
+            )
+
+            if secret_string:
+
+                secret_data = json.loads(
+                    secret_string
+                )
+
+                bitbucket_token = secret_data.get(
+                    "BITBUCKET_TOKEN"
+                )
+
+                github_token = secret_data.get(
+                    "GITHUB_TOKEN"
+                )
+
+                if bitbucket_token and github_token:
+
+                    log(
+                        "Migration credentials loaded "
+                        "from AWS Secrets Manager."
+                    )
+
+                    return (
+                        bitbucket_token,
+                        github_token
+                    )
+
+                secret_error = (
+                    "BITBUCKET_TOKEN or GITHUB_TOKEN "
+                    "is missing inside the secret."
+                )
+
+            else:
+
+                secret_error = (
+                    "SecretString is empty."
+                )
+
+        except Exception as exc:
+
+            secret_error = str(exc)
+
+    else:
+
+        secret_error = (
+            "boto3 is not installed."
+        )
+
+    # Fallback for local testing / transition
+    bitbucket_token = os.getenv(
+        "BITBUCKET_TOKEN"
+    )
+
+    github_token = os.getenv(
+        "GITHUB_TOKEN"
+    )
+
+    if bitbucket_token and github_token:
+
+        warn(
+            "Secrets Manager could not be used. "
+            "Falling back to environment variables."
+        )
+
+        return (
+            bitbucket_token,
+            github_token
+        )
+
+    fail(
+        "Unable to load migration credentials. "
+        f"Secret '{SECRET_NAME}' could not provide "
+        "BITBUCKET_TOKEN and GITHUB_TOKEN. "
+        f"Details: {secret_error}"
+    )
+
+
+
+
 # MAIN
 
 
@@ -1843,33 +1976,10 @@ def main():
 
     check_requirements()
 
-    bitbucket_token = (
-        os.getenv(
-            "BITBUCKET_TOKEN"
-        )
-    )
-
-    github_token = (
-        os.getenv(
-            "GITHUB_TOKEN"
-        )
-    )
-
-    if not bitbucket_token:
-
-        fail(
-            "BITBUCKET_TOKEN "
-            "environment variable "
-            "is missing."
-        )
-
-    if not github_token:
-
-        fail(
-            "GITHUB_TOKEN "
-            "environment variable "
-            "is missing."
-        )
+    (
+        bitbucket_token,
+        github_token
+    ) = get_migration_tokens()
 
     bitbucket = (
         bitbucket_session(
