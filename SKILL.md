@@ -1,4 +1,3 @@
-
 ---
 name: bitbucket-github-migration
 description: Migrate Bitbucket Cloud Git repositories to GitHub using Git CLI, Git LFS, GitHub CLI and REST APIs without custom Python migration scripts.
