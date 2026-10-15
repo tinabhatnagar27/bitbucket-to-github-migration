@@ -1,411 +1,689 @@
 ---
 name: bitbucket-github-migration
-description: Migrate Bitbucket Cloud Git repositories to GitHub using Git CLI, Git LFS, GitHub CLI and REST APIs without custom Python migration scripts.
+description: Automatically discover and migrate all accessible Bitbucket Cloud Git repositories to GitHub using Git CLI, Git LFS, GitHub CLI and REST APIs without custom Python migration scripts.
 ---
 
-# Bitbucket to GitHub Migration
+# Automated Bitbucket to GitHub Migration
 
 ## Objective
 
-Perform secure, agent-driven repository migration
-from Bitbucket Cloud to GitHub using AWS Bedrock
-AgentCore Harness.
+Perform fully automated Bitbucket Cloud to GitHub
+repository migration using AWS Bedrock AgentCore Harness.
 
-The agent must perform:
+The agent must automatically:
 
-1. Repository discovery
-2. Repository classification
-3. Migration planning
-4. Git migration
-5. Git LFS migration
-6. Migration validation
-7. Reporting and rollback preparation
+1. Prepare the migration environment.
+2. Authenticate securely.
+3. Discover all accessible Bitbucket workspaces.
+4. Discover all accessible Git repositories.
+5. Identify the authenticated GitHub account.
+6. Generate destination repository mappings.
+7. Create new private GitHub repositories.
+8. Migrate Git history, branches and tags.
+9. Migrate Git LFS objects.
+10. Validate source and destination repositories.
+11. Generate detailed migration reports.
 
-Do not execute any Python migration script.
+Do not require manually entered repository names,
+workspace names or destination repository names.
 
-Use Git CLI, Git LFS, GitHub CLI, shell tools
-and REST APIs directly.
+Do not execute custom Python migration scripts.
 
-## Required Tools
+Use Shell, Git CLI, Git LFS, GitHub CLI and REST APIs.
 
-- Git CLI
-- Git LFS
-- GitHub CLI (gh)
-- curl
-- Shell command execution capability
-- Network access to Bitbucket and GitHub
-- Secure credential access
-- Writable temporary workspace
+## AWS AgentCore Configuration
 
-If any required capability is unavailable,
-stop and report the issue.
-
-## AWS AgentCore Harness Configuration
-
-Harness Name:
+Harness:
 bitbucket_github_migration_07
 
 AWS Region:
 us-east-1
 
-AWS Secrets Manager Secret:
+Secrets Manager:
 vcs-migration/tokens
 
-The Harness must have:
+Credential identifiers:
+BITBUCKET_TOKEN
+GITHUB_TOKEN
 
-- Access to the attached SKILL.md
-- Secure Git command execution capability
-- Network connectivity to source and destination
-- An approved authentication mechanism
-- Appropriate IAM permissions
+Required execution capabilities:
 
-Do not assume AgentCore Code Interpreter and
-shell execution tools provide identical capabilities.
+- Built-in Shell tool
+- Git CLI
+- Git LFS
+- GitHub CLI
+- curl
+- AWS CLI
+- Network access to Bitbucket and GitHub
+- Writable workspace
+- Secure authentication mechanism
 
-Do not execute custom Python migration scripts.
+Use Shell for Git commands.
 
-## Authentication
+Code Interpreter must not be used as the
+Git migration execution environment.
 
-Required credentials:
+## Authorization and Scope
 
-- BITBUCKET_TOKEN
-- GITHUB_TOKEN
+The user authorizes automatic discovery of all
+Git repositories accessible through the configured
+Bitbucket identity.
 
-Credentials are stored in AWS Secrets Manager.
+The user authorizes creation of new, empty,
+private repositories under the authenticated
+GitHub user account.
 
-Secret Name:
-vcs-migration/tokens
+Do not require individual approval for each
+new repository within this authorized scope.
 
-Region:
-us-east-1
+Never overwrite or modify an existing
+GitHub repository.
 
-### Authentication Rules
+Never delete or modify Bitbucket source repositories.
 
-1. Verify the execution identity has permission
-   to access the required secret.
+Do not modify production systems, CI/CD,
+webhooks, developer remotes or credentials.
 
-2. Use an approved secure credential mechanism
-   to access Bitbucket and GitHub.
+Do not create repositories in GitHub organizations
+unless separately authorized.
 
-3. Never print, log or expose secret values.
+If a requested action exceeds this scope,
+stop that action and report it.
 
-4. Never place credentials in Git remote URLs,
-   shell command arguments or reports.
+## Step 1: Environment Preparation
 
-5. Do not expose credentials through debugging
-   commands or verbose logging.
+Use the built-in Shell tool.
 
-6. Do not assume IAM permission automatically
-   injects credentials into the agent environment.
-
-7. Do not attempt migration if authentication fails.
-
-8. Use only the minimum permissions required.
-
-## Step 1: Preflight Checks
-
-Verify tool availability:
+Check:
 
 git --version
 git lfs version
 gh --version
 curl --version
-
-Verify:
-
-- Bitbucket API connectivity
-- GitHub API connectivity
-- Bitbucket read access
-- GitHub repository creation permission
-- Git push permission
-- AWS Secrets Manager access
-- Temporary workspace availability
-
-Check authentication securely without
-displaying credentials.
-
-If any critical check fails, stop.
-
-## Step 2: Repository Discovery
-
-Use Bitbucket Cloud REST APIs.
-
-Tasks:
-
-1. Discover accessible Bitbucket workspaces.
-2. Select only the approved workspace.
-3. List repositories in that workspace.
-4. Handle API pagination.
-5. Identify source clone URLs.
-6. Identify default branches.
-7. Collect branch names and tags.
-8. Identify Git LFS usage.
-9. Identify Git submodules.
-10. Record repository metadata.
-11. Identify archived or inactive repositories.
-12. Classify migration complexity.
-
-Do not automatically migrate all discovered
-repositories.
-
-Do not access unapproved repositories.
-
-## Step 3: Migration Planning
-
-For each approved repository:
-
-1. Confirm Bitbucket workspace.
-2. Confirm Bitbucket repository name.
-3. Confirm destination GitHub owner.
-4. Confirm destination repository name.
-5. Check destination existence.
-6. Identify Git history and refs.
-7. Identify LFS and submodules.
-8. Identify metadata requiring API migration.
-9. Assess migration risks.
-10. Prepare rollback instructions.
-
-Present the migration plan before execution.
-
-Require explicit approval before creating
-or modifying GitHub repositories.
-
-Do not overwrite existing repositories
-without explicit authorization.
-
-## Step 4: Create GitHub Repository
-
-Use GitHub CLI or GitHub REST API.
-
-Create an empty private repository unless
-the user explicitly approves public visibility.
-
-Example:
-
-gh repo create OWNER/REPOSITORY --private
-
-Do not initialize the repository with a
-README, .gitignore or license.
-
-Verify repository creation succeeded.
-
-If the destination already exists,
-stop and request approval.
-
-## Step 5: Git Repository Migration
-
-Use Git CLI through the approved shell tool.
-
-Mirror-clone the Bitbucket repository:
-
-git clone --mirror SOURCE_REPO_URL
-
-Enter the created mirrored repository directory.
-
-Verify the mirror clone succeeded.
-
-Push Git references to GitHub:
-
-git push --mirror DESTINATION_REPO_URL
-
-Replace placeholders with approved URLs.
-
-Use the configured secure credential helper.
-
-Do not embed authentication tokens in URLs.
-
-Do not push to an existing destination
-without explicit authorization.
-
-Do not delete the Bitbucket source repository.
-
-Do not execute any Python migration script.
-
-## Step 6: Git LFS Migration
-
-If the source repository contains Git LFS
-objects, migrate those objects separately.
-
-From the mirrored repository:
-
-git lfs fetch --all origin
-
-Verify all required LFS objects were fetched.
-
-Push LFS objects using an authenticated,
-configured destination remote:
-
-git lfs push --all DESTINATION_REMOTE
-
-Do not use literal DESTINATION_REMOTE;
-replace it with a configured Git remote name
-or an approved destination URL.
-
-Verify Git LFS objects are accessible
-from the destination.
-
-If LFS download or upload fails:
-
-- Stop or mark migration incomplete
-- Record errors
-- Do not report successful validation
-- Do not perform production cutover
-
-## Step 7: Metadata Migration
-
-Git mirror operations preserve Git references,
-but do not automatically migrate platform metadata.
+aws --version
 
 Identify:
 
-- Pull requests
-- Issues
-- Review comments
-- Repository permissions
-- Webhooks
-- Branch protection rules
-- CI/CD configuration
-- Repository settings
+- Operating system
+- CPU architecture
+- Available disk space
+- Writable directories
+- Network connectivity
 
-Use supported REST APIs only when the
-metadata type is explicitly approved
-for migration.
+If Git LFS or GitHub CLI is missing:
 
-Otherwise document the metadata gap.
+1. Identify the required architecture.
+2. Download an official compatible release.
+3. Verify release checksums.
+4. Install the required binary.
+5. Verify the installed version.
 
-Do not claim that unsupported metadata
-was successfully migrated.
+Do not execute downloaded installation scripts.
 
-## Step 8: Migration Validation
+Do not assume installed tools persist
+across Harness sessions.
 
-Verify source and destination repositories.
+If installation fails, report BLOCKED.
+
+## Step 2: Secure Authentication
+
+Use AWS Secrets Manager:
+
+Secret:
+vcs-migration/tokens
+
+Region:
+us-east-1
+
+Tasks:
+
+1. Verify AWS execution identity.
+2. Verify Secrets Manager access.
+3. Access credentials securely through an
+   approved credential mechanism.
+4. Authenticate with Bitbucket Cloud.
+5. Authenticate with GitHub.
+6. Identify the authenticated GitHub owner.
+7. Verify repository creation permissions.
+8. Verify Git read and push permissions.
+
+Authentication safety:
+
+- Never print tokens.
+- Never place tokens in command arguments.
+- Never place tokens in Git remote URLs.
+- Never expose Authorization headers.
+- Never enable shell tracing with secrets.
+- Never store credentials in reports.
+- Never write tokens to persistent plaintext files.
+- Do not pass credentials through visible tool output.
+
+Use a secure credential broker or helper that
+keeps credentials outside model-visible output.
+
+IAM permission alone does not configure
+Git or API authentication.
+
+If secure authentication cannot be established,
+stop and report BLOCKED.
+
+## Step 3: Automatic Bitbucket Discovery
+
+Discover all accessible Bitbucket Cloud workspaces.
+
+Use supported Bitbucket REST APIs.
+
+For every accessible workspace:
+
+1. Enumerate all repositories.
+2. Follow all pagination links.
+3. Identify Git repositories.
+4. Record repository names.
+5. Record workspace names.
+6. Record repository UUIDs.
+7. Record repository visibility.
+8. Identify the default branch.
+9. Collect branch names.
+10. Collect tag names.
+11. Identify Git LFS usage.
+12. Identify submodules.
+13. Collect repository size where available.
+14. Collect pull request counts where available.
+15. Identify unsupported metadata.
+16. Classify migration complexity.
+
+Deduplicate repositories by stable source ID.
+
+Track API errors and inaccessible repositories.
+
+Do not silently skip repositories.
+
+If discovery is incomplete, mark inventory
+PARTIAL and disclose the limitation.
+
+Display:
+
+- Total workspaces discovered
+- Total repositories discovered
+- Total eligible Git repositories
+- Total inaccessible repositories
+- Repository inventory
+
+Do not require manual workspace or repo names.
+
+## Step 4: Automatic Destination Mapping
+
+Identify the authenticated GitHub user.
+
+For every eligible Bitbucket repository:
+
+1. Preserve original repository name where possible.
+2. Check if destination name already exists.
+3. Detect naming collisions.
+4. Generate deterministic unique names
+   using the source workspace where needed.
+5. Verify resulting names meet GitHub rules.
+6. Preserve private visibility.
+7. Record source-to-destination mapping.
+
+If a destination already exists:
+
+- Do not overwrite it.
+- Do not force-push to it.
+- Mark BLOCKED_EXISTING.
+- Continue with other eligible repositories.
+
+Record the mapping before migration.
+
+Do not automatically target GitHub organizations.
+
+## Step 5: Automated Repository Migration
+
+Process eligible repositories sequentially
+or in small controlled batches.
+
+For every eligible repository:
+
+### A. Prepare
+
+1. Verify source accessibility.
+2. Verify destination does not exist.
+3. Verify available workspace capacity.
+4. Record initial source references.
+5. Identify LFS and submodule requirements.
+
+### B. Create Destination
+
+Create a new empty private GitHub repository.
+
+Use GitHub CLI or REST API.
+
+Do not initialize with:
+
+- README
+- .gitignore
+- License
+
+Verify the created destination.
+
+If creation fails, record FAILED
+and continue when safe.
+
+### C. Mirror Clone
+
+Run through Shell:
+
+git clone --mirror SOURCE_REPO_URL
+
+Use authenticated source access.
+
+Verify successful clone.
+
+Do not embed tokens in SOURCE_REPO_URL.
+
+### D. Mirror Push
+
+Configure an approved authenticated
+destination remote.
+
+For an empty approved destination:
+
+git push --mirror DESTINATION_REMOTE
+
+Verify the Git push succeeded.
+
+Do not mirror-push to an existing repository.
+
+Preserve:
+
+- Git commit objects and history
+- Branches
+- Tags
+- Required Git references
+
+Verify user-facing branches and tags separately.
+
+### E. Set Default Branch
+
+Identify the Bitbucket default branch.
+
+Set the matching branch as the GitHub
+destination default branch.
+
+Verify the setting through GitHub API.
+
+### F. Cleanup
+
+Clean temporary working files only after
+required validation and reporting.
+
+Never delete the source repository.
+
+## Step 6: Git LFS Migration
+
+Detect Git LFS usage.
+
+If LFS is detected:
+
+1. Identify required LFS pointers.
+2. Verify Git LFS is installed.
+3. Fetch all required LFS objects from Bitbucket.
+
+Run:
+
+git lfs fetch --all origin
+
+Check command exit status.
+
+4. Verify required LFS objects are available.
+5. Push objects to GitHub:
+
+git lfs push --all DESTINATION_REMOTE
+
+6. Verify required objects can be fetched
+   from the destination.
+
+Record:
+
+- Required LFS object count
+- Available source objects
+- Successfully validated destination objects
+- Missing objects
+- Failed uploads
+
+If required LFS objects are unavailable,
+mark the migration PARTIAL or FAILED.
+
+Never declare LFS PASS from an upload
+command alone without destination verification.
+
+If Git LFS is absent from the repository,
+record NOT APPLICABLE.
+
+## Step 7: Migration Validation
+
+Validate every migrated repository.
 
 ### Branch Validation
 
-Compare source and destination branch names.
-
-Run through the approved authenticated
-Git execution mechanism:
+Collect:
 
 git ls-remote --heads SOURCE_REPO_URL
 
 git ls-remote --heads DESTINATION_REPO_URL
 
-Compare branch names and commit hashes.
+Compare:
+
+- Branch count
+- Branch names
+- Branch HEAD commit hashes
 
 ### Tag Validation
+
+Collect:
 
 git ls-remote --tags SOURCE_REPO_URL
 
 git ls-remote --tags DESTINATION_REPO_URL
 
-Compare tag references and hashes.
+Compare:
 
-Account for annotated tag peeled references.
+- Tag count
+- Tag names
+- Tag object hashes
 
-### Commit History Validation
+Handle annotated-tag peeled references
+correctly.
+
+### Commit Validation
 
 Verify:
 
-- Commit IDs for matching Git refs
-- Branch heads
-- Tag objects
-- Repository history
-- Default branch settings
+- Default branch commit hash
+- Matching branch HEAD commit hashes
+- Git commit history
+- Default branch commit count
+- Required Git references
 
-### Git LFS Validation
+Use actual Git output.
 
-If applicable:
+Do not rely on counts alone.
 
-- Confirm successful LFS upload
-- Verify required objects exist on GitHub
-- Verify representative LFS files can be fetched
-- Record missing objects
+### LFS Validation
 
-### Metadata Validation
+Confirm that required LFS objects
+are available in the GitHub destination.
 
-If metadata migration was approved:
+### Additional Validation
 
-- Verify supported metadata on GitHub
-- Record unsupported metadata
-- Identify incomplete API migrations
+Check:
 
-Mark migration successful only when
-all required validation checks pass.
+- Repository exists
+- Private visibility
+- Default branch
+- Git submodules if applicable
+- Destination API accessibility
 
-## Step 9: Migration Report
+Report each item:
 
-Generate a Markdown or JSON report.
+MATCH
+MISMATCH
+NOT APPLICABLE
+NOT VERIFIED
 
-Include:
+Never fabricate validation results.
 
-- Source workspace
-- Source repository
-- Destination GitHub repository
-- Migration timestamp
-- Migration status
-- Branch validation results
-- Tag validation results
-- Git history validation
-- Git LFS status
-- Metadata migration status
-- Errors and warnings
-- Migration complexity
-- Rollback instructions
-- Final acceptance status
+## Step 8: Metadata Assessment
 
-Possible statuses:
+Git mirror does not automatically migrate
+all Bitbucket metadata.
+
+Assess:
+
+- Pull requests
+- Issues
+- Review comments
+- Webhooks
+- Branch restrictions
+- CI/CD configuration
+- Repository permissions
+- Repository settings
+
+Do not automatically migrate metadata
+outside the authorized Git migration scope.
+
+Record:
+
+MIGRATED
+NOT MIGRATED
+NOT APPLICABLE
+NOT VERIFIED
+
+Include metadata gaps in the final report.
+
+## Step 9: Error Handling
+
+For each repository:
+
+- Record discovery status.
+- Record migration status.
+- Record validation status.
+- Record errors and warnings.
+- Retry transient failures with limited attempts.
+- Respect API rate limits.
+- Do not blindly retry permission failures.
+- Do not overwrite existing destinations.
+- Do not delete failed destinations automatically.
+- Do not delete source repositories.
+
+Use statuses:
 
 SUCCESS
 PARTIAL
 FAILED
 BLOCKED
+SKIPPED
 
-Never mark a repository SUCCESS if
-required Git or LFS validation fails.
+Continue after isolated repository failures.
 
-## Step 10: Rollback Strategy
+Stop the overall run on systemic security
+or authentication failures.
 
-1. Keep the Bitbucket source repository intact.
-2. Do not delete source repositories.
-3. Record destination state before cutover.
-4. Do not update CI/CD integrations without approval.
-5. Do not modify developer Git remotes
-   without approval.
-6. If validation fails, stop the migration workflow.
-7. Preserve failure evidence.
-8. Request approval before destructive rollback.
-9. Never automatically delete GitHub repositories.
+## Step 10: Bulk Migration Checkpoints
 
-## Security and Safety Rules
+Maintain a migration inventory containing:
 
-- Never expose Bitbucket or GitHub tokens.
-- Never store credentials in migration reports.
-- Never log secrets.
-- Never migrate unapproved repositories.
-- Never overwrite repositories without approval.
-- Never force-push to existing destinations
-  without explicit authorization.
-- Never delete the original Bitbucket repository.
-- Stop on critical authentication failures.
-- Validate every migrated repository.
-- Generate an auditable migration report.
-- Follow least-privilege IAM permissions.
-- Do not execute migrate_bitbucket_to_github_full.py.
-- Do not execute other custom migration scripts.
-- Do not use Python to orchestrate migration.
+- Source workspace
+- Source repository UUID
+- Destination mapping
+- Discovery status
+- Migration status
+- Validation status
+- Errors
+- Timestamps
+
+Use a configured durable checkpoint location
+when available.
+
+If durable storage is unavailable,
+report that automatic resumption is unsupported.
+
+Avoid duplicate destination creation
+when retrying interrupted work.
+
+Respect Harness execution time, storage
+and model/tool invocation limits.
+
+Do not claim unattended continuation
+unless an external continuation mechanism
+has actually been configured.
+
+## Step 11: Final Migration Report
+
+Generate:
+
+migration-report.json
+migration-report.md
+
+Use only verified source and destination data.
+
+### A. Migration Summary
+
+Report:
+
+TOTAL WORKSPACES DISCOVERED
+TOTAL REPOSITORIES DISCOVERED
+TOTAL ELIGIBLE REPOSITORIES
+TOTAL SUCCESSFUL MIGRATIONS
+TOTAL PARTIAL MIGRATIONS
+TOTAL FAILED MIGRATIONS
+TOTAL BLOCKED REPOSITORIES
+TOTAL SKIPPED REPOSITORIES
+
+### B. Source vs Destination Comparison
+
+Create a table with:
+
+- Source workspace
+- Bitbucket repository name
+- GitHub repository name
+- Bitbucket branch count
+- GitHub branch count
+- Bitbucket tag count
+- GitHub tag count
+- Default branch
+- Commit history validation
+- Git LFS validation
+- Metadata status
+- Final status
+
+### C. Branch Comparison
+
+For every migrated repository:
+
+Branch Name
+Source Commit SHA
+Destination Commit SHA
+Validation Result
+
+### D. Tag Comparison
+
+For every migrated repository:
+
+Tag Name
+Source Tag SHA
+Destination Tag SHA
+Validation Result
+
+### E. Git LFS Comparison
+
+Show:
+
+- Source required objects
+- Destination verified objects
+- Missing objects
+- Failed transfers
+- LFS validation status
+
+### F. Migration Errors
+
+Record all:
+
+- Authentication errors
+- API failures
+- Git clone failures
+- Push failures
+- LFS errors
+- Validation mismatches
+- Naming conflicts
+- Unsupported metadata
+
+### G. Final Summary
+
+Display:
+
+Bitbucket Repositories:
+GitHub Repositories Migrated:
+
+Bitbucket Branches:
+GitHub Branches:
+
+Bitbucket Tags:
+GitHub Tags:
+
+Commit History:
+MATCH / MISMATCH / NOT VERIFIED
+
+Git LFS:
+PASS / FAIL / NOT APPLICABLE / NOT VERIFIED
+
+Migration Status:
+SUCCESS / PARTIAL / FAILED / BLOCKED
+
+Include created GitHub repository URLs.
+
+Display the report in the Harness response.
+
+Save reports only where a writable,
+approved output location is available.
+
+If report persistence is unavailable,
+state the limitation.
+
+## Step 12: Rollback and Recovery
+
+- Preserve Bitbucket source repositories.
+- Do not perform automatic destructive rollback.
+- Do not delete GitHub repositories automatically.
+- Keep source-to-destination mappings.
+- Record incomplete migrations.
+- Preserve failure evidence.
+- Resume only when safe and supported.
+- Never update production integrations
+  without separate authorization.
+
+## Security Rules
+
+- No custom Python migration scripts.
+- No Python-based migration orchestration.
+- No manual repository name requirements.
+- No manual workspace name requirements.
+- No credential exposure.
+- No overwriting existing GitHub repositories.
+- No deletion of Bitbucket source repositories.
+- No production cutover.
+- No unapproved organization migration.
+- No unsupported success claims.
+- No silent skipping of repositories.
 
 ## Expected Result
 
-A GitHub repository containing:
+Automatically discover all accessible
+Bitbucket Cloud Git repositories.
 
-- Complete approved Git history
-- All required branches
-- All required tags
-- Git LFS objects where applicable
-- Correct default branch configuration
-- Approved migrated metadata, if supported
+Create approved new private GitHub destinations.
 
-The migration must produce a validation report
-and identify any unsupported metadata or
-remaining manual actions.
+Migrate:
+
+- Git history
+- Branches
+- Tags
+- Required Git LFS objects
+
+Validate every migration.
+
+Generate a complete source-to-destination
+comparison report showing:
+
+- Total discovered repositories
+- Total migrated repositories
+- Branch and tag counts
+- Commit SHA comparisons
+- LFS results
+- Metadata gaps
+- Failed and skipped repositories
+- Final migration status
+
+Do not report full SUCCESS until all eligible
+repositories have been processed and all
+required validation checks have passed.
