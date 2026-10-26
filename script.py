@@ -1,29 +1,4 @@
 #!/usr/bin/env python3
-"""
-Bitbucket Cloud to GitHub migration POC.
-
-Automatic:
-- Workspace discovery
-- Project discovery (including empty projects)
-- GitHub Projects V2 creation using original project names
-- Repository discovery and private repository creation
-- Git commits, branches, tags and Git LFS
-- Existing repository handling without overwriting Git history
-- Project to repository linking
-- Historical sample Issues from migration-test-data/issues.json
-- Pull Requests and comments
-- Migration reporting
-
-Credentials:
-BITBUCKET_TOKEN and GITHUB_TOKEN environment variables,
-or AWS Secrets Manager secret vcs-migration/tokens.
-
-Usage:
-python3 migrate_bitbucket_to_github_full.py
-
-Optional:
-DRY_RUN=true python3 migrate_bitbucket_to_github_full.py
-"""
 
 import json
 import os
