@@ -1648,6 +1648,17 @@ def create_github_repo(gh, owner, personal, target, source):
     )
 
 
+def sync_description(gh, owner, target, source):
+    """Sync the Bitbucket description even when the GitHub repo already exists."""
+    url = f"{GH}/repos/{owner}/{target}"
+    description = str(source.get("description") or "")[:350]
+    existing = api(gh, "GET", url)
+    if (existing.get("description") or "") == description:
+        return "ALREADY_MATCHED"
+    api(gh, "PATCH", url, json={"description": description})
+    return "UPDATED"
+
+
 def save_report(report):
     REPORT_FILE.write_text(
         json.dumps(report, indent=2),
@@ -1988,6 +1999,10 @@ def main():
                     "GitHub repository lookup failed: "
                     f"HTTP {response.status_code}"
                 )
+
+            result["description"] = sync_description(
+                gh, owner, target, repo
+            )
 
             result["topics"] = sync_topics(
                 gh, owner, target,
